@@ -4,7 +4,7 @@ This library helps you in creating a realm, controller or agent.
 It depends on node-jose that actaully works in browser too, so 
 the library can be included in browser and node code. 
 
-The schemas are imported via and compiled into typescript via json-schema
+The schemas are imported and compiled into typescript via json-schema
 definitions on site.  
 
 See https://developer.brickchain.com/ for full documentation.
