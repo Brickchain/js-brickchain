@@ -108,17 +108,16 @@ class Client {
         "\ncerts:\n"+this.certs.map(c=>c.toString()).join("\n");
     }
 
+    
+
 }
 
-
-let client = new Client()
 
 async function main(client, args) {
-
+    let dir = process.env["BC_CLIENT_CONFIG"] || "./bc-config"; 
     await client.loadAll();
-
-
 }
 
+let client = new Client()
 main(client, process.argv).then(()=>consile.log(""))
 .catch(err=>{console.error(err);process.exit(1)});

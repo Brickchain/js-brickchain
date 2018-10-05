@@ -2,8 +2,8 @@
 'use strict';
 
 /**
- * This is a command line tool for basic realm description 
- * resolution. 
+ * This is a command line tool for basic realm description
+ * resolution.
  */
 
 const fetch = require("node-fetch")
@@ -12,7 +12,7 @@ const bc = require("../dist/integrity-lib.umd")
 if (process.argv.length != 3) {
     console.log("requires one argument, the realm (domain) to dig");
     process.exit(1);
-}  
+}
 
 let domain = process.argv[2];
 console.log("looking up "+domain)
@@ -38,13 +38,22 @@ async function dig(url) {
 
     for (let i in mp.parts) {
         let part = mp.parts[i];
-        let doc = part.document; 
+        let doc = part.document;
+        let jws = null
         if (part.encoding.indexOf("+jws") > 0) {
-            doc = await integrity.verified(doc)
+            jws = doc
+            doc = await integrity.verified(jws)
         }
         // console.log("doc:"+doc);
         let actionDescriptor = integrity.parseJSONSchema(JSON.parse(doc));
         console.log("service: ", actionDescriptor)
+        if (jws)  {
+          console.log("-jws: ", jws)
+          let o = actionDescriptor;
+          o.signature = jws;
+          console.log("https://app.plusintegrity.com/?data="+encodeURIComponent(JSON.stringify(actionDescriptor)))
+        }
+
     }
 }
 
@@ -53,7 +62,3 @@ dig(url).then(()=>console.log(""))
     console.error(err, url)
     process.exit(1)
 })
-
-
-
-
