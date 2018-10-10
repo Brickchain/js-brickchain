@@ -3,8 +3,11 @@
 
 const fetch = require("node-fetch")
 const bc = require("../dist/integrity-lib.umd")
+const Integrity = bc.Integrity; 
+const storage = require("./storage")
+const RowStorage = storage.RowStorage;
+const JSONStorage = storage.JSONStorage;
 const fs = require('fs')
-var split = require('split')
 
 /**
  * this is a client simulator that allows you to 
@@ -20,83 +23,59 @@ class Client {
 
     constructor() {
         this.mandates = []
-        this.integrity = bc.Integrity.CreateIntegrity(this.keychange)
+        this.integrity = null; 
         this.certs = []
         this.facts = []
         this.realms = []
-        this.folder = null
+        this.folder = "."
     }
 
     keychange(key,op,store) {
         console.log("key "+op+" :", key);
+        JSONStorage.writeObject(this.folder+"/keystore.json", store.toJSON(true))
     }
 
-    async loadAll() {
-        await loadMandates();
-        await loadRealms();
-        await loadFacts();
+    loadFrom(folder) {
+        this.folder = folder; 
+        return this.load()
     }
 
-    loadObjects(file) {
-        return new Promise((success,failure)=>{
-            let mlist = []
-            fs.createReadStream(file)
-            .pipe(split())
-            .on('end', ()=> {
-                console.debug("loaded "+mlist.length+" mandates.")
-                this.mandates = mlist
-                success(mlist)
-            })
-            .on('data', (line) => {
-                if (line.length > 0 && line[0] == '{') {
-                    mlist.push(JSON.parse(line))
-                }
-            })
-            .on('error', (err) => { failure(err);});
-        })
+    async init() {
+        this.integrity = await Integrity.CreateIntegrity((k,o,s)=>this.keychange(k,o,s));
+        let k1 = await this.integrity.getPrivate(""); // master
+        let k2 = await this.integrity.getPrivate("device");
+        let k3 = await this.integrity.getPrivate("signer");
+        if (!k1) await this.integrity.createPrivate("master", "master")
+        if (!k2) await this.integrity.createPrivate("device", "device")
+        if (!k3) await this.integrity.createPrivate("signer", "signer") 
+        return this.integrity     
     }
 
-    async writeObjects(file, list) {
+    async load() {
 
-        let writer = fs.createWriteStream(file)
-        .on('finish', ()=> {
-            success(list.length)
-        })
-        .on('error', (err) => { failure(err);});
+        let json = JSONStorage.loadObject(this.folder+"/keystore.json"); 
+        if (Object.getOwnPropertyNames(json).length > 0) {
+            this.integrity = Integrity.LoadIntegrity(json, (k,o,s)=>this.keychange(k,o,s))
+        }
 
-        list.forEach(obj => {
-            let line = JSON.stringify(obj,null,0).replace('\n', '')
-            writer.write(line)
-        })
-        writer.end();
+        let l  = await RowStorage.loadObjects(this.folder+"/mandates.rows");
+        this.mandates = l.map(o => new bc.Mandate().parse(o))
 
+        l = await RowStorage.loadObjects(this.folder+"/realms.rows"); 
+        this.realms = l.map(o => new bc.RealmDescriptor().parse(o))
+
+        l = await RowStorage.loadObjects(this.folder+"/facts.rows"); 
+        this.facts = l.map(o => new bc.Fact().parse(o))
+
+        return this;
     }
 
-    loadMandates() {
-        return this.loadObjects(this.folder+"/mandates")
-            .then(list => this.mandates = list.map(o => new bc.Mandate().parse(o)))
-    }
-
-    loadFacts() {
-        return this.loadObjects(this.folder+"/facts")
-            .then(list => this.facts = list.map(o => new bc.Fact().parse(o)))
-    }
-
-    loadRealms() {
-        return this.loadObjects(this.folder+"/realms")
-            .then(list => this.realms = list.map(o => new bc.RealmDescriptor().parse(o)))
-    }
-
-    writeMandates() {
-        return this.writeObjects(this.folder+"/mandates", this.mandates);
-    }
-
-    writeFacts() {
-        return this.writeObjects(this.folder+"/facts", this.facts);
-    }
-
-    writeRealms() {
-        return this.writeObjects(this.folder+"/realms", this.realms);
+    async store() {
+        let count = 0; 
+        count += await RowStorage.writeObjects(this.folder+"/mandates.rows", this.mandates);
+        count += await RowStorage.writeObjects(this.folder+"/facts.rows", this.facts);
+        count += await RowStorage.writeObjects(this.folder+"/realms.rows", this.realms);
+        return count;
     }
 
     toString() {
@@ -107,17 +86,23 @@ class Client {
         "\nrealms:\n"+this.mandates.map(r=>r.toString()).join("\n")+ 
         "\ncerts:\n"+this.certs.map(c=>c.toString()).join("\n");
     }
-
-    
-
 }
 
-
 async function main(client, args) {
-    let dir = process.env["BC_CLIENT_CONFIG"] || "./bc-config"; 
-    await client.loadAll();
+    let dir = process.env["BC_CLIENT_CONFIG"] || "./bc-client"; 
+    if (dir && !fs.existsSync(dir)) {
+        console.log("creating folder: "+dir)
+        fs.mkdirSync(dir);
+    }
+    await client.loadFrom(dir);
+    if (!client.integrity) await client.init();
+
+    await client.store();
+    // await client.integrity.
 }
 
 let client = new Client()
-main(client, process.argv).then(()=>consile.log(""))
+
+main(client, process.argv)
+.then(()=>console.log("ok."))
 .catch(err=>{console.error(err);process.exit(1)});

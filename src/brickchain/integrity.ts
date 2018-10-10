@@ -87,7 +87,6 @@ export class Integrity {
         if (key.kid == this.privateKeyName) {
             this.privateKey = key;
         }
-
         let k = await this.keystorage.add(key)
         await this.notify(k, Integrity.OP_SET)
         return k
@@ -95,11 +94,14 @@ export class Integrity {
 
     public async getPrivate(kid: string = "") {
 
-        if (!this.privateKey) {
-          this.privateKey = await this.keystorage.get(kid?kid:this.privateKeyName, true);
-        }
-        return this.privateKey;
+        if (kid == this.privateKeyName || kid == "") {
+          if (!this.privateKey) {
+              this.privateKey = await this.keystorage.get(this.privateKeyName, {}, true);
+          }   
+          return this.privateKey;
+        } 
 
+        return await this.keystorage.get(kid, {}, true);
     }
 
     public async createPrivate(kid:string, use:string = "master") : Promise<jose.Key> {
