@@ -68,7 +68,7 @@ class Client {
         let l  = await RowStorage.loadObjects(this.folder+"/mandates.rows");
         this.mandates = l.map(o => new bc.Mandate().parse(o))
         l = await RowStorage.loadObjects(this.folder+"/realms.rows"); 
-        this.realms = l.map(o => new bc.RealmDescriptor.parse(o))
+        this.realms = l.map(o => new bc.RealmDescriptor().parse(o))
         l = await RowStorage.loadObjects(this.folder+"/facts.rows"); 
         this.facts = l.map(o => new bc.Fact().parse(o))
         return this;
@@ -150,7 +150,7 @@ class Client {
         let roles = this.mandates.filter(m => m["@realm"] == realm["@id"])
         console.log("roles: ", roles.map(r=>r.role))
         let list = await this.realmServices(realm, roles)
-        console.log("services: ", list)
+        console.log("services: ", list.map(ad=>ad.label+": "+ad.actionURI ))
         return list;
     }
 
