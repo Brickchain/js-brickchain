@@ -10,7 +10,7 @@ import {
     Certificate, Contract, 
     ControllerDescriptor, ControllerBinding, 
     Fact, FactSignature, KeyPurpose, 
-    RealmDescriptor, Mandate, 
+    RealmDescriptor, Mandate, MandateToken, 
     Revocation, RevocationChecksum, RevocationRequest, 
     ScopeRequest, Scope,
     SignatureRequest, UrlResponse, Message, Multipart
@@ -71,7 +71,6 @@ export class Integrity {
     }
 
     private notify(key:jose.Key, op:string):Promise<any> {
-
         if (this.changeCallback) {
           try {
             this.changeCallback(key, op, this.keystorage)
@@ -83,7 +82,6 @@ export class Integrity {
     }
 
     public async setPrivate(key: jose.Key) : Promise<jose.Key> {
-
         if (key.kid == this.privateKeyName) {
             this.privateKey = key;
         }
@@ -93,14 +91,12 @@ export class Integrity {
     }
 
     public async getPrivate(kid: string = "") {
-
         if (kid == this.privateKeyName || kid == "") {
           if (!this.privateKey) {
               this.privateKey = await this.keystorage.get(this.privateKeyName, {}, true);
           }   
           return this.privateKey;
         } 
-
         return await this.keystorage.get(kid, {}, true);
     }
 
@@ -141,6 +137,10 @@ export class Integrity {
       return this.keystorage.get(name);
     }
 
+    public addKey(jwk: any): Promise<jose.Key> {
+      return this.keystorage.add(jwk);
+    }
+
     public createCertificate(
         subKey: jose.Key,
         keyType: string = '*',
@@ -162,25 +162,28 @@ export class Integrity {
     }
 
 
-    public sign(keyName: string, input: any): Promise<string> {
-        return this.getPrivate(keyName)
-          .then((key:jose.Key)=>key.sign(input))
+    public async sign(keyName: string, input: any, compact: boolean = false): Promise<any> {
+      let pkey = await this.getPrivate(keyName)
+      let buf = typeof (input) == 'string' ? input : JSON.stringify(input)
+      let fmt:any = compact ? {format: "compact"} : {}
+      let jws = jose.JWS.createSign(fmt, { key: pkey, reference: 'jwk' })
+      console.debug("sign: ", jws, pkey)
+      return await jws.final(buf, 'utf8')
     }
 
     public signCompact(keyName: string, input: any): Promise<string> {
-        return this.getPrivate(keyName)
-          .then((key:jose.Key)=>key.sign(input, true))
+      return this.sign(keyName, input, true)
     }
 
     public encrypt(recipient: jose.Key, input: any): Promise<any> {
         let buf = (typeof (input) == 'string') ? input : JSON.stringify(input)
         return jose.JWE.createEncrypt(
           { protect: ['enc'], contentAlg: 'A256GCM' },recipient)
-          .update(buf).final()
+          .final(buf)
     }
 
     // validate and return verify result
-    public verify(jws: any): Promise<any> {
+    public verify(jws: any, allowEmbeddedKey = false): Promise<any> {
 
         if (typeof jws === 'string') {
           if (jws[0] != '{') { // compact form to jws conversion
@@ -195,12 +198,12 @@ export class Integrity {
           }
         }
 
-        return this.verifier.verify(jws)
+        return this.verifier.verify(jws, {allowEmbeddedKey: allowEmbeddedKey})
     }
 
     // validate and return payload as string
-    public verified(jws: any): Promise<string> {
-        return this.verify(jws)
+    public verified(jws: any, allowEmbeddedKey = false): Promise<string> {
+        return this.verify(jws, allowEmbeddedKey)
             .then(verified =>  verified.payload.toString("utf8"))
     }
 
@@ -271,28 +274,32 @@ export class Integrity {
       let i = type.indexOf("#");
       if (i > 0) type = type.substring(0,i);
       let obj = this.createType(type);
-      // console.log(obj)
       obj.parse(json);
       return obj; 
     }
 
+    async parseMultipart(json, allowEmbeddedKey = false) {
+      let mp = this.parseJSONSchema(json)
+      if (mp.getType() != Multipart.TYPE && 
+          mp.getType() != Multipart.TYPEv1) {
+          throw new Error("unexpected response, expecting multipart: "+mp.toJSON())
+      }
+      return await mp.parseParts(this, allowEmbeddedKey); 
+    }
+
     public async factHash(fact: Fact):Promise<string> {
-      
       let dataString =JSON.stringify(fact.data);
       let hash = await this.digest("SHA-256",dataString);
       return hash; 
-
     }
 
     private async digest(hash, pdata) : Promise<string> {
-
       let window = getRoot()
       if (window.crypto && window.crypto.subtle) { // browser
         let alg = {name: hash}; // "SHA-256"
         return window.crypto.subtle.digest(alg, pdata);
       } else { // node
-        let crypto = require("crypto")
-        // "sha256"
+        let crypto = require("crypto") // "sha256"
         let md = hash.replace("SHA-", "SHA").toLowerCase();
         let digest = crypto.createHash(md)
         digest.update(pdata);

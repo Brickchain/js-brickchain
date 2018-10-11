@@ -1,6 +1,5 @@
 
 const fs = require('fs')
-var split = require('split')
 
 /**
  * Storage with lines of json-structures, lines not starting with '{' ignored. 
@@ -28,19 +27,23 @@ class RowStorage {
         if (!fs.existsSync(file)) return Promise.resolve(new Array())
 
         return new Promise((success,failure)=>{
-            let list = new Array()
-            fs.createReadStream(file)
-            .pipe(split())
-            .on('end', ()=> {
-                this.objects = list
+  
+            fs.readFile(file, (err,data)=>{
+                if (err) return faliure(err)
+                let list = new Array()
+                let rows = data.toString().split("\n");
+                for(let i in rows) {
+                    let row = rows[i]
+                    if (row.length > 0 && row[0] == '{') {
+                        try {
+                            list.push(JSON.parse(row))
+                        } catch (e) {
+                            console.error(e,"\nrow: ",row)
+                        }
+                    }
+                }
                 success(list)
             })
-            .on('data', (line) => {
-                if (line.length > 0 && line[0] == '{') {
-                    list.push(JSON.parse(line))
-                }
-            })
-            .on('error', (err) => { failure(err);});
         })
     }
 
@@ -53,7 +56,7 @@ class RowStorage {
 
             list.forEach(obj => {
                 let line = JSON.stringify(obj,null,0).replace('\n', '')
-                writer.write(line)
+                writer.write(line+"\n")
             })
             writer.end();
         })
@@ -87,17 +90,17 @@ class JSONStorage {
         return new Promise((success,failure)=>{
             let buf = ""
             fs.createReadStream(file)
-            .pipe(split())
+            .on('data', (data) => {
+                buf = buf + data; 
+            })
             .on('end', ()=> {
                 try {
                     let obj = JSON.parse(buf)
                     success(obj)
                 } catch (err) {
+                    console.error("cant parse json: "+buf)
                     failure(err)
                 }
-            })
-            .on('data', (data) => {
-                buf = buf + data; 
             })
             .on('error', (err) => { failure(err);});
         })
@@ -107,7 +110,7 @@ class JSONStorage {
 
         let json = "{}"
         try {
-            let json = JSON.stringify(obj,null,2)
+            json = JSON.stringify(obj,null,2)
         } catch (err) {
             return Promise.reject(err)
         }

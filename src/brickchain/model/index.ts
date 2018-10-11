@@ -3,6 +3,8 @@ import { Base } from './base'
 
 import { RealmDescriptor } from './realm-descriptor'
 import { Mandate } from './mandate'
+import { MandateToken } from './mandatetoken'
+
 
 import { ActionDescriptor } from './action-descriptor'
 import { Certificate } from './certificate'
@@ -27,7 +29,7 @@ export {
     Certificate, Contract, 
     ControllerDescriptor, ControllerBinding, 
     Fact, FactSignature, KeyPurpose, 
-    RealmDescriptor, Mandate, 
+    RealmDescriptor, Mandate, MandateToken,
     Revocation, RevocationChecksum, RevocationRequest, 
     ScopeRequest, Scope,
     SignatureRequest, UrlResponse, Message, Multipart };
