@@ -110,8 +110,9 @@ class Client {
         let r = await fetch(realm.servicesURL, {credentials:"include", headers: h})
         if (!r.ok) throw new Error(r.statusText)
         let json = await r.json()
-        // make sure we have all the keys and cert-chains for them before parisng multipart. 
-        return await this.integrity.parseMultipart(json, true)
+        let list = await this.integrity.parseMultipart(json, true)
+        await this.addCertificates(list)
+        return list
     } 
 
     async action(descr, params) {
@@ -150,24 +151,22 @@ class Client {
         console.log("roles: ", roles.map(r=>r.role))
         let list = await this.realmServices(realm, roles)
         console.log("services: ", list)
+        return list;
+    }
+
+    async addCertificates(list) { // bad certs will blow this!
         for (let i in list) {
             let a = list[i]
             let jws = a["@certificate"]
             if (jws) {
-                try {
-                    let json = await this.integrity.verified(jws)
-                    let cert = JSON.parse(json)
-                    // console.debug(cert)
-                    if (!await this.integrity.getKey(cert.subject.kid)) {
-                        console.log("adding key: ", cert.subject)
-                        await this.integrity.addKey(cert.subject)
-                    }
-                } catch (err) {
-                    console.error("cert error: ", err)
+                let json = await this.integrity.verified(jws)
+                let cert = JSON.parse(json)
+                if (!await this.integrity.getKey(cert.subject.kid)) {
+                    console.log("adding key: ", cert.subject)
+                    await this.integrity.addKey(cert.subject)
                 }
             }
         }
-        return list; 
     }
 }
 
