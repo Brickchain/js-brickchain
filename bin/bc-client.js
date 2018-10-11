@@ -150,6 +150,23 @@ class Client {
         console.log("roles: ", roles.map(r=>r.role))
         let list = await this.realmServices(realm, roles)
         console.log("services: ", list)
+        for (let i in list) {
+            let a = list[i]
+            let jws = a["@certificate"]
+            if (jws) {
+                try {
+                    let json = await this.integrity.verified(jws)
+                    let cert = JSON.parse(json)
+                    // console.debug(cert)
+                    if (!await this.integrity.getKey(cert.subject.kid)) {
+                        console.log("adding key: ", cert.subject)
+                        await this.integrity.addKey(cert.subject)
+                    }
+                } catch (err) {
+                    console.error("cert error: ", err)
+                }
+            }
+        }
         return list; 
     }
 }
