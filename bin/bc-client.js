@@ -96,22 +96,14 @@ class Client {
         return await this.integrity.parseSignedRealm("*" ,json)
     } 
 
-    authToken(mandates, ttl) {
-        if (!mandates || mandates.length == 0) return {};
-        let token = new bc.MandateToken()
-        token.mandates = mandates.map(m => m.signature); 
-        token.ttl = ttl || 60000; // 60 sec.
-        return this.integrity.signCompact("", token)
-    }
-
     async realmServices(realm, mandates) {
-        let jws = await this.authToken(mandates)
+        let jws = await this.integrity.mandateToken(mandates)
         let h = { authorization: "mandate "+jws }
         let r = await fetch(realm.servicesURL, {credentials:"include", headers: h})
         if (!r.ok) throw new Error(r.statusText)
         let json = await r.json()
         let list = await this.integrity.parseMultipart(json, true)
-        await this.addCertificates(list)
+        await this.integrity.addCertificates(list)
         return list
     } 
 
@@ -152,21 +144,6 @@ class Client {
         let list = await this.realmServices(realm, roles)
         console.log("services: ", list.map(ad=>ad.label+": "+ad.actionURI ))
         return list;
-    }
-
-    async addCertificates(list) { // bad certs will blow this!
-        for (let i in list) {
-            let a = list[i]
-            let jws = a["@certificate"]
-            if (jws) {
-                let json = await this.integrity.verified(jws)
-                let cert = JSON.parse(json)
-                if (!await this.integrity.getKey(cert.subject.kid)) {
-                    console.log("adding key: ", cert.subject)
-                    await this.integrity.addKey(cert.subject)
-                }
-            }
-        }
     }
 }
 

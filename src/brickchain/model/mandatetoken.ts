@@ -30,5 +30,5 @@ export class MandateToken extends Base implements v2.MandateToken {
     super(MandateToken.TYPE, time)
   }
 
-
+  
 }

@@ -252,6 +252,10 @@ export class Integrity {
         case Mandate.TYPEv1:
             return new Mandate();
 
+        case MandateToken.TYPE:
+        case MandateToken.TYPEv1:
+            return new MandateToken();
+    
         case Fact.TYPE:
         case Fact.TYPEv1:
             return new Fact();
@@ -304,6 +308,36 @@ export class Integrity {
         let digest = crypto.createHash(md)
         digest.update(pdata);
         return Promise.resolve(digest.digest())
+      }
+    }
+
+    /**
+     * create mandate token as a compact jws
+     * mandates can be mandates with signatures or just the compact-jws signatures.
+     */
+    public mandateToken(mandates:any[], ttl = 60000, keyId = "") : Promise<string> {
+        if (!mandates || mandates.length == 0) return undefined;
+        let token = new MandateToken()
+        token.mandates = mandates.map(m => typeof(m) == 'string' ? m : m.signature); 
+        token.ttl = ttl 
+        return this.signCompact(keyId, token)
+    }
+    
+    /**
+     * read all certificats, if signed with key we have, add signed key to keystore.
+     * @param list - list of model.base docs.
+     */
+    public async addCertificates(list:Base[]) { // bad certs will blow this!
+      for (let i in list) {
+          let a = list[i]
+          let jws = a["@certificate"]
+          if (jws) {
+              let json = await this.verified(jws)
+              let cert = JSON.parse(json)
+              if (!await this.getKey(cert.subject.kid)) {
+                  await this.addKey(cert.subject)
+              }
+          }
       }
     }
 
