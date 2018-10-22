@@ -1,5 +1,5 @@
 {
-  "name": "@brickchain/integrity-lib",
+  "name": "@brickchain/js-brickchain",
   "version": "0.1.0",
   "description": "Lib for integrity communication",
   "keywords": [
@@ -29,11 +29,11 @@
   "license": "BSD-2-Clause",
   "homepage": "https://developer.brickchain.com/",
   "bugs": {
-    "url": "https://github.com/Brickchain/js-integrity/issues"
+    "url": "https://github.com/Brickchain/js-brickchain/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/brickchain/js-integrity.git"
+    "url": "https://github.com/brickchain/js-brickchain.git"
   },
   "engines": {
     "node": ">=9.0.0"
