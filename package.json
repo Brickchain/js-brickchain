@@ -10,7 +10,7 @@
   "module": "dist/integrity.es5.js",
   "typings": "dist/types/integrity.d.ts",
   "files": [
-    "dist"
+    "dist", "bin"
   ],
   "scripts": {
     "test": "echo \"tests in integrity-test\"",
