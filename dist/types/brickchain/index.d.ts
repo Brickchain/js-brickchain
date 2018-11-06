@@ -1,2 +1,2 @@
-import { Integrity } from "./Integrity";
+import { Integrity } from "./integrity";
 export { Integrity };

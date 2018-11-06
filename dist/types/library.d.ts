@@ -1,3 +1,6 @@
-import { Integrity } from "./service/";
-import { Base, ActionDescriptor, Contract, Message, Multipart, Part, Mandate, MandateToken, Realm, Key, Certificate, Receipt, Fact, ControllerBinding, ControllerDescriptor } from "./model/";
-export { Integrity, Base, ActionDescriptor, Contract, Message, Multipart, Part, Mandate, MandateToken, Realm, Key, Certificate, Receipt, Fact, ControllerBinding, ControllerDescriptor };
+/**
+ * Full library exporting these packages.
+ */
+import { Integrity } from "./brickchain/";
+import { Base, Action, ActionDescriptor, Certificate, Contract, ControllerDescriptor, ControllerBinding, Fact, FactSignature, KeyPurpose, RealmDescriptor, Mandate, MandateToken, Revocation, RevocationChecksum, RevocationRequest, ScopeRequest, Scope, SignatureRequest, UrlResponse, Message, Multipart } from "./brickchain/model/";
+export { Integrity, Base, Action, ActionDescriptor, Certificate, Contract, ControllerDescriptor, ControllerBinding, Fact, FactSignature, KeyPurpose, RealmDescriptor, Mandate, MandateToken, Revocation, RevocationChecksum, RevocationRequest, ScopeRequest, Scope, SignatureRequest, UrlResponse, Message, Multipart };
