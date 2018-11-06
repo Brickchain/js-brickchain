@@ -167,7 +167,7 @@ export class Integrity {
       let buf = typeof (input) == 'string' ? input : JSON.stringify(input)
       let fmt:any = compact ? {format: "compact"} : {}
       let jws = jose.JWS.createSign(fmt, { key: pkey, reference: 'jwk' })
-      console.debug("sign: ", jws, pkey)
+      // console.debug("sign: ", jws, pkey)
       return await jws.final(buf, 'utf8')
     }
 
@@ -297,17 +297,24 @@ export class Integrity {
       return hash; 
     }
 
-    private async digest(hash, pdata) : Promise<string> {
+    private async digest(hash, pdata, fmt = "hex") : Promise<string> {
       let window = getRoot()
       if (window.crypto && window.crypto.subtle) { // browser
         let alg = {name: hash}; // "SHA-256"
-        return window.crypto.subtle.digest(alg, pdata);
+        let hbuf = await window.crypto.subtle.digest(alg, pdata)
+        if (fmt == "hex") {
+          const hArray = Array.from(new Uint8Array(hbuf));
+          return hArray.map(b => ('00' + b.toString(16)).slice(-2)).join('');
+        } else if (fmt == 'base64') {
+          return window.btoa(hbuf)
+        }
+        return hbuf.toString(fmt)
       } else { // node
         let crypto = require("crypto") // "sha256"
         let md = hash.replace("SHA-", "SHA").toLowerCase();
         let digest = crypto.createHash(md)
         digest.update(pdata);
-        return Promise.resolve(digest.digest())
+        return Promise.resolve(digest.digest(fmt))
       }
     }
 
@@ -372,6 +379,47 @@ export class Integrity {
       return realm;
 
     }
+
+    // encode strings, objects, arrays into reproduceable string
+    // note, this is v0 formating expect multihash/multibase
+    // see: https://github.com/multiformats/multibase
+    public jsonHash(data:any):Promise<string> {
+
+      // let hash = (obj) => {
+      //   return crypto.createHash('SHA256').update(obj).digest('hex')
+      // }
+
+      let serialize = function(d) {
+        let o = [];
+
+        Object.keys(d).sort().forEach(k => {
+            let v = d[k]
+            switch (typeof v) {
+              case 'string':
+                o.push(k+':'+v)
+                break;
+              case 'object':
+                if (Array.isArray(v)) {
+                    let s = []
+                    v.forEach(v => {
+                        if (typeof v == 'object') s.push(serialize(v));
+                        else s.push(v);
+                    })
+                    o.push(k+':['+s.join('|')+']')
+                } else {
+                    o.push(k+':'+serialize(v))
+                }
+                break;
+              default:
+                throw "values of type "+typeof v + "not supported";
+            }
+          })
+        return '{'+o.join("|")+'}'
+      }
+      return this.digest("SHA-256", serialize(data), "hex")
+    }
+
+
 /*
     private verifyRealmHistory(realm: RealmDescriptor): Promise<string> {
       let prevKey: any = realm.publicKey;

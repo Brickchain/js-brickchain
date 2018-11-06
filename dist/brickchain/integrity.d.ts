@@ -59,4 +59,5 @@ export declare class Integrity {
      */
     addCertificates(list: Base[]): Promise<void>;
     parseSignedRealm(name: string, jws: any, importKey?: boolean): Promise<RealmDescriptor>;
+    jsonHash(data: any): Promise<string>;
 }

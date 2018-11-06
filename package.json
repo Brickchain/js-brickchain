@@ -10,7 +10,8 @@
   "module": "dist/integrity.es5.js",
   "typings": "dist/types/integrity.d.ts",
   "files": [
-    "dist", "bin"
+    "dist",
+    "bin"
   ],
   "scripts": {
     "test": "echo \"tests in integrity-test\"",
@@ -39,9 +40,9 @@
     "node": ">=9.0.0"
   },
   "devDependencies": {
-    "@types/node": "^9.6.35",
+    "@types/node": "^9.6.36",
     "json-schema-to-typescript": "^5.7.0",
-    "node-fetch": "^2.2.0",
+    "node-fetch": "^2.2.1",
     "rollup": "^0.59.4",
     "rollup-plugin-commonjs": "^9.2.0",
     "rollup-plugin-node-globals": "^1.4.0",
