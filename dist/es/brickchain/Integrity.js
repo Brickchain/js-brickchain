@@ -327,7 +327,7 @@ export class Integrity {
         });
     }
     // encode strings, objects, arrays into reproduceable string
-    // note, this is v0 formating expect multihash/multibase
+    // note: this is v0 formating expect multihash/multibase
     // see: https://github.com/multiformats/multibase
     jsonHash(data) {
         // let hash = (obj) => {

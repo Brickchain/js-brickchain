@@ -354,18 +354,6 @@ function getRoot() {
 /**
  * Key handling for integrity clients and controllers.
  *
- * Rules for key "kid" and "use":
- *
- *   realms are prefixed with realm-[domain-name]
- *   controllers are prefixed with realm-[domain-name]#[id]
- *   users are prefixed with user-[id]
- *
- * Use:
- *   "device", "sign", "access", "root", "..."
- *
- * Certificate storage & history:
- *   callback binding to store and retreve history of objects.
- *
  */
 class Integrity {
     constructor(keystorage, privateKeyName = "master") {
@@ -652,7 +640,7 @@ class Integrity {
         return __awaiter(this, void 0, void 0, function* () {
             if (typeof (jws) == 'string')
                 jws = JSON.parse(jws);
-            // get key out and verify that we have it. assumes full JWS. 
+            // get key out and verify that we have it. assumes full JWS.
             let pText = Buffer.from(jws.protected, "base64").toString('utf8');
             let pJSON = JSON.parse(pText);
             let pKey = yield this.getKey(pJSON.kid);
@@ -677,7 +665,7 @@ class Integrity {
         });
     }
     // encode strings, objects, arrays into reproduceable string
-    // note, this is v0 formating expect multihash/multibase
+    // note: this is v0 formating expect multihash/multibase
     // see: https://github.com/multiformats/multibase
     jsonHash(data) {
         // let hash = (obj) => {

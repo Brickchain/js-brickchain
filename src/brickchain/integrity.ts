@@ -369,7 +369,7 @@ export class Integrity {
     }
 
     // encode strings, objects, arrays into reproduceable string
-    // note, this is v0 formating expect multihash/multibase
+    // note: this is v0 formating expect multihash/multibase
     // see: https://github.com/multiformats/multibase
     public jsonHash(data:any):Promise<string> {
 
@@ -401,7 +401,7 @@ export class Integrity {
               default:
                 throw "values of type "+typeof v + "not supported";
             }
-          })
+        })
         return '{'+o.join("|")+'}'
       }
       return this.digest("SHA-256", serialize(data), "hex")

@@ -3,18 +3,6 @@ import { Base, Fact, RealmDescriptor } from './model/';
 /**
  * Key handling for integrity clients and controllers.
  *
- * Rules for key "kid" and "use":
- *
- *   realms are prefixed with realm-[domain-name]
- *   controllers are prefixed with realm-[domain-name]#[id]
- *   users are prefixed with user-[id]
- *
- * Use:
- *   "device", "sign", "access", "root", "..."
- *
- * Certificate storage & history:
- *   callback binding to store and retreve history of objects.
- *
  */
 export declare class Integrity {
     static OP_SET: string;
